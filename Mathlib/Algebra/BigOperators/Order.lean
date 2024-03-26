@@ -399,6 +399,16 @@ section CanonicallyOrderedCommMonoid
 
 variable [CanonicallyOrderedCommMonoid M] {f : ι → M} {s t : Finset ι}
 
+/-- In a canonically-ordered monoid, a product bounds each of its terms.
+
+See also `Finset.single_le_prod'`.-/
+@[to_additive "In a canonically-ordered additive monoid, a sum bounds each of its terms.
+
+See also `Finset.single_le_sum`."]
+lemma _root_.CanonicallyOrderedCommMonoid.single_le_prod {i : ι} (hi : i ∈ s) :
+    f i ≤ ∏ j in s, f j :=
+  single_le_prod' (fun _ _ ↦ one_le _) hi
+
 @[to_additive (attr := simp) sum_eq_zero_iff]
 theorem prod_eq_one_iff' : ∏ x in s, f x = 1 ↔ ∀ x ∈ s, f x = 1 :=
   prod_eq_one_iff_of_one_le' fun x _ ↦ one_le (f x)
@@ -844,7 +854,7 @@ because `compareHyp` can't look for assumptions behind binders.
 @[positivity Finset.sum _ _]
 def evalFinsetSum : PositivityExt where eval {u α} zα pα e := do
   match e with
-  | ~q(@Finset.sum _ $ι $instα $s $f) =>
+  | ~q(@Finset.sum $ι _ $instα $s $f) =>
     let i : Q($ι) ← mkFreshExprMVarQ q($ι) .syntheticOpaque
     have body : Q($α) := .betaRev f #[i]
     let rbody ← core zα pα body
