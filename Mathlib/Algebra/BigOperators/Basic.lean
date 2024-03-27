@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Johannes Hölzl
 -/
 import Mathlib.Algebra.BigOperators.Multiset.Lemmas
+import Mathlib.Algebra.BigOperators.Multiset.Order
 import Mathlib.Algebra.Function.Indicator
 import Mathlib.Algebra.Ring.Opposite
 import Mathlib.Data.Finset.Powerset
@@ -2586,7 +2587,7 @@ theorem cast_sum [AddCommGroupWithOne β] (s : Finset α) (f : α → ℤ) :
 @[simp, norm_cast]
 theorem cast_prod {R : Type*} [CommRing R] (f : α → ℤ) (s : Finset α) :
     (↑(∏ i in s, f i) : R) = ∏ i in s, (f i : R) :=
-  (Int.castRingHom R).map_prod _ _
+  map_prod (Int.castRingHom R) _ _
 #align int.cast_prod Int.cast_prod
 
 end Int
