@@ -5,6 +5,7 @@ Authors: Sébastien Gouëzel
 -/
 import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 import Mathlib.MeasureTheory.Covering.Besicovitch
+import Mathlib.Tactic.AdaptationNote
 
 #align_import measure_theory.covering.besicovitch_vector_space from "leanprover-community/mathlib"@"fd5edc43dc4f10b85abfe544b88f82cf13c5f844"
 
@@ -63,51 +64,20 @@ radius at `1`. -/
 def centerAndRescale : SatelliteConfig E N τ where
   c i := (a.r (last N))⁻¹ • (a.c i - a.c (last N))
   r i := (a.r (last N))⁻¹ * a.r i
-  rpos i := mul_pos (inv_pos.2 (a.rpos _)) (a.rpos _)
+  rpos i := by positivity
   h i j hij := by
-    rcases a.h hij with (H | H)
-    · left
-      constructor
-      · rw [dist_eq_norm, ← smul_sub, norm_smul, Real.norm_eq_abs,
-          abs_of_nonneg (inv_nonneg.2 (a.rpos _).le)]
-        refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-        rw [dist_eq_norm] at H
-        convert H.1 using 2
-        abel
-      · rw [← mul_assoc, mul_comm τ, mul_assoc]
-        refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-        exact H.2
-    · right
-      constructor
-      · rw [dist_eq_norm, ← smul_sub, norm_smul, Real.norm_eq_abs,
-          abs_of_nonneg (inv_nonneg.2 (a.rpos _).le)]
-        refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-        rw [dist_eq_norm] at H
-        convert H.1 using 2
-        abel
-      · rw [← mul_assoc, mul_comm τ, mul_assoc]
-        refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-        exact H.2
+    simp (disch := positivity) only [dist_smul₀, dist_sub_right, mul_left_comm τ,
+      Real.norm_of_nonneg]
+    rcases a.h hij with (⟨H₁, H₂⟩ | ⟨H₁, H₂⟩) <;> [left; right] <;> constructor <;> gcongr
   hlast i hi := by
-    have H := a.hlast i hi
-    constructor
-    · rw [dist_eq_norm, ← smul_sub, norm_smul, Real.norm_eq_abs,
-        abs_of_nonneg (inv_nonneg.2 (a.rpos _).le)]
-      refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-      rw [dist_eq_norm] at H
-      convert H.1 using 2
-      abel
-    · rw [← mul_assoc, mul_comm τ, mul_assoc]
-      refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-      exact H.2
+    simp (disch := positivity) only [dist_smul₀, dist_sub_right, mul_left_comm τ,
+      Real.norm_of_nonneg]
+    have ⟨H₁, H₂⟩ := a.hlast i hi
+    constructor <;> gcongr
   inter i hi := by
-    have H := a.inter i hi
-    rw [dist_eq_norm, ← smul_sub, norm_smul, Real.norm_eq_abs,
-      abs_of_nonneg (inv_nonneg.2 (a.rpos _).le), ← mul_add]
-    refine' mul_le_mul_of_nonneg_left _ (inv_nonneg.2 (a.rpos _).le)
-    rw [dist_eq_norm] at H
-    convert H using 2
-    abel
+    simp (disch := positivity) only [dist_smul₀, ← mul_add, dist_sub_right, Real.norm_of_nonneg]
+    gcongr
+    exact a.inter i hi
 #align besicovitch.satellite_config.center_and_rescale Besicovitch.SatelliteConfig.centerAndRescale
 
 theorem centerAndRescale_center : a.centerAndRescale.c (last N) = 0 := by
@@ -155,7 +125,7 @@ theorem card_le_of_separated (s : Finset E) (hs : ∀ c ∈ s, ‖c‖ ≤ 2)
     convert h c hc d hd hcd
     norm_num
   have A_subset : A ⊆ ball (0 : E) ρ := by
-    refine' iUnion₂_subset fun x hx => _
+    refine iUnion₂_subset fun x hx => ?_
     apply ball_subset_ball'
     calc
       δ + dist x 0 ≤ δ + 2 := by rw [dist_zero_right]; exact add_le_add le_rfl (hs x hx)
@@ -169,7 +139,7 @@ theorem card_le_of_separated (s : Finset E) (hs : ∀ c ∈ s, ‖c‖ ≤ 2)
         have I : 0 < δ := by norm_num
         simp only [div_pow, μ.addHaar_ball_of_pos _ I]
         simp only [one_div, one_pow, Finset.sum_const, nsmul_eq_mul, mul_assoc]
-      _ ≤ μ (ball (0 : E) ρ) := (measure_mono A_subset)
+      _ ≤ μ (ball (0 : E) ρ) := measure_mono A_subset
       _ = ENNReal.ofReal (ρ ^ finrank ℝ E) * μ (ball 0 1) := by
         simp only [μ.addHaar_ball_of_pos _ ρpos]
   have J : (s.card : ℝ≥0∞) * ENNReal.ofReal (δ ^ finrank ℝ E) ≤ ENNReal.ofReal (ρ ^ finrank ℝ E) :=
@@ -182,7 +152,7 @@ theorem card_le_of_separated (s : Finset E) (hs : ∀ c ∈ s, ‖c‖ ≤ 2)
 
 theorem multiplicity_le : multiplicity E ≤ 5 ^ finrank ℝ E := by
   apply csSup_le
-  · refine' ⟨0, ⟨∅, by simp⟩⟩
+  · refine ⟨0, ⟨∅, by simp⟩⟩
   · rintro _ ⟨s, ⟨rfl, h⟩⟩
     exact Besicovitch.card_le_of_separated s h.1 h.2
 #align besicovitch.multiplicity_le Besicovitch.multiplicity_le
@@ -190,10 +160,10 @@ theorem multiplicity_le : multiplicity E ≤ 5 ^ finrank ℝ E := by
 theorem card_le_multiplicity {s : Finset E} (hs : ∀ c ∈ s, ‖c‖ ≤ 2)
     (h's : ∀ c ∈ s, ∀ d ∈ s, c ≠ d → 1 ≤ ‖c - d‖) : s.card ≤ multiplicity E := by
   apply le_csSup
-  · refine' ⟨5 ^ finrank ℝ E, _⟩
+  · refine ⟨5 ^ finrank ℝ E, ?_⟩
     rintro _ ⟨s, ⟨rfl, h⟩⟩
     exact Besicovitch.card_le_of_separated s h.1 h.2
-  · simp only [mem_setOf_eq, Ne.def]
+  · simp only [mem_setOf_eq, Ne]
     exact ⟨s, rfl, hs, h's⟩
 #align besicovitch.card_le_multiplicity Besicovitch.card_le_multiplicity
 
@@ -243,11 +213,11 @@ theorem exists_goodδ :
       ∃ f ∈ closedBall (0 : Fin N → E) 2,
         ∃ φ : ℕ → ℕ, StrictMono φ ∧ Tendsto ((F ∘ u) ∘ φ) atTop (𝓝 f) :=
       IsCompact.tendsto_subseq (isCompact_closedBall _ _) A
-    refine' ⟨f, fun i => _, fun i j hij => _⟩
+    refine ⟨f, fun i => ?_, fun i j hij => ?_⟩
     · simp only [pi_norm_le_iff_of_nonneg zero_le_two, mem_closedBall, dist_zero_right] at fmem
       exact fmem i
     · have A : Tendsto (fun n => ‖F (u (φ n)) i - F (u (φ n)) j‖) atTop (𝓝 ‖f i - f j‖) :=
-        ((hf.apply i).sub (hf.apply j)).norm
+        ((hf.apply_nhds i).sub (hf.apply_nhds j)).norm
       have B : Tendsto (fun n => 1 - u (φ n)) atTop (𝓝 (1 - 0)) :=
         tendsto_const_nhds.sub (hu.comp φ_mono.tendsto_atTop)
       rw [sub_zero] at B
@@ -267,7 +237,7 @@ theorem exists_goodδ :
       Finset.mem_image, true_and]
   have h's : ∀ c ∈ s, ∀ d ∈ s, c ≠ d → 1 ≤ ‖c - d‖ := by
     simp only [s, forall_apply_eq_imp_iff, forall_exists_index, Finset.mem_univ, Finset.mem_image,
-      Ne.def, exists_true_left, forall_apply_eq_imp_iff, forall_true_left, true_and]
+      Ne, exists_true_left, forall_apply_eq_imp_iff, forall_true_left, true_and]
     intro i j hij
     have : i ≠ j := fun h => by rw [h] at hij; exact hij rfl
     exact h'f this
@@ -320,7 +290,7 @@ theorem le_multiplicity_of_δ_of_fin {n : ℕ} (f : Fin n → E) (h : ∀ i, ‖
       Finset.mem_image, imp_true_iff, true_and]
   have h's : ∀ c ∈ s, ∀ d ∈ s, c ≠ d → 1 - goodδ E ≤ ‖c - d‖ := by
     simp only [s, forall_apply_eq_imp_iff, forall_exists_index, Finset.mem_univ, Finset.mem_image,
-      Ne.def, exists_true_left, forall_apply_eq_imp_iff, forall_true_left, true_and]
+      Ne, exists_true_left, forall_apply_eq_imp_iff, forall_true_left, true_and]
     intro i j hij
     have : i ≠ j := fun h => by rw [h] at hij; exact hij rfl
     exact h' this
@@ -361,7 +331,7 @@ theorem exists_normalized_aux1 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
   have τpos : 0 < τ := _root_.zero_lt_one.trans_le hτ
   have I : (1 - δ / 4) * τ ≤ 1 :=
     calc
-      (1 - δ / 4) * τ ≤ (1 - δ / 4) * (1 + δ / 4) := mul_le_mul_of_nonneg_left hδ1 D
+      (1 - δ / 4) * τ ≤ (1 - δ / 4) * (1 + δ / 4) := by gcongr
       _ = (1 : ℝ) - δ ^ 2 / 16 := by ring
       _ ≤ 1 := by linarith only [sq_nonneg δ]
   have J : 1 - δ ≤ 1 - δ / 4 := by linarith only [δnonneg]
@@ -381,9 +351,9 @@ theorem exists_normalized_aux1 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
 
 variable [NormedSpace ℝ E]
 
--- Adaptation note: after v4.7.0-rc1, there is a performance problem in `field_simp`.
--- (Part of the code was ignoring the `maxDischargeDepth` setting: now that we have to increase it,
--- other paths becomes slow.)
+#adaptation_note /-- after v4.7.0-rc1, there is a performance problem in `field_simp`.
+(Part of the code was ignoring the `maxDischargeDepth` setting:
+ now that we have to increase it, other paths becomes slow.) -/
 set_option maxHeartbeats 400000 in
 theorem exists_normalized_aux2 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
     (lastc : a.c (last N) = 0) (lastr : a.r (last N) = 1) (hτ : 1 ≤ τ) (δ : ℝ) (hδ1 : τ ≤ 1 + δ / 4)
@@ -395,7 +365,6 @@ theorem exists_normalized_aux2 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
     simpa only [dist_eq_norm] using a.h
   have δnonneg : 0 ≤ δ := by linarith only [hτ, hδ1]
   have D : 0 ≤ 1 - δ / 4 := by linarith only [hδ2]
-  have τpos : 0 < τ := _root_.zero_lt_one.trans_le hτ
   have hcrj : ‖a.c j‖ ≤ a.r j + 1 := by simpa only [lastc, lastr, dist_zero_right] using a.inter' j
   have I : a.r i ≤ 2 := by
     rcases lt_or_le i (last N) with (H | H)
@@ -406,7 +375,7 @@ theorem exists_normalized_aux2 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
       exact one_le_two
   have J : (1 - δ / 4) * τ ≤ 1 :=
     calc
-      (1 - δ / 4) * τ ≤ (1 - δ / 4) * (1 + δ / 4) := mul_le_mul_of_nonneg_left hδ1 D
+      (1 - δ / 4) * τ ≤ (1 - δ / 4) * (1 + δ / 4) := by gcongr
       _ = (1 : ℝ) - δ ^ 2 / 16 := by ring
       _ ≤ 1 := by linarith only [sq_nonneg δ]
   have A : a.r j - δ ≤ ‖a.c i - a.c j‖ := by
@@ -414,17 +383,17 @@ theorem exists_normalized_aux2 {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ)
     have C : a.r j ≤ 4 :=
       calc
         a.r j ≤ τ * a.r i := H.2
-        _ ≤ τ * 2 := (mul_le_mul_of_nonneg_left I τpos.le)
-        _ ≤ 5 / 4 * 2 := (mul_le_mul_of_nonneg_right (by linarith only [hδ1, hδ2]) zero_le_two)
+        _ ≤ τ * 2 := by gcongr
+        _ ≤ 5 / 4 * 2 := by gcongr; linarith only [hδ1, hδ2]
         _ ≤ 4 := by norm_num
     calc
       a.r j - δ ≤ a.r j - a.r j / 4 * δ := by
-        refine' sub_le_sub le_rfl _
+        gcongr _ - ?_
         refine' mul_le_of_le_one_left δnonneg _
         linarith only [C]
       _ = (1 - δ / 4) * a.r j := by ring
-      _ ≤ (1 - δ / 4) * (τ * a.r i) := (mul_le_mul_of_nonneg_left H.2 D)
-      _ ≤ 1 * a.r i := by rw [← mul_assoc]; apply mul_le_mul_of_nonneg_right J (a.rpos _).le
+      _ ≤ (1 - δ / 4) * (τ * a.r i) := mul_le_mul_of_nonneg_left H.2 D
+      _ ≤ 1 * a.r i := by rw [← mul_assoc]; gcongr
       _ ≤ ‖a.c i - a.c j‖ := by rw [one_mul]; exact H.1
   set d := (2 / ‖a.c j‖) • a.c j with hd
   have : a.r j - δ ≤ ‖a.c i - d‖ + (a.r j - 1) :=
@@ -507,7 +476,7 @@ theorem exists_normalized {N : ℕ} {τ : ℝ} (a : SatelliteConfig E N τ) (las
     simp only [c']
     split_ifs with h; · exact h
     by_cases hi : ‖a.c i‖ = 0 <;> field_simp [norm_smul, hi]
-  refine' ⟨c', fun n => norm_c'_le n, fun i j inej => _⟩
+  refine ⟨c', fun n => norm_c'_le n, fun i j inej => ?_⟩
   -- up to exchanging `i` and `j`, one can assume `‖c i‖ ≤ ‖c j‖`.
   wlog hij : ‖a.c i‖ ≤ ‖a.c j‖ generalizing i j
   · rw [norm_sub_rev]; exact this j i inej.symm (le_of_not_le hij)
